@@ -334,7 +334,8 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 0;
 
         // Special pool mods have no trailing digit — treat as T1 (digit=9) for scoring
-        if (IsSpecialPoolMod(rawName)) digit = 9;
+        // Also catches implicits where rawName may be null but name has no trailing digit
+        if (IsSpecialPoolMod(rawName) || (string.IsNullOrEmpty(rawName) && IsSpecialPoolMod(name))) digit = 9;
 
         // ── GOD TIER ────────────────────────────────────────────────────────────
 
@@ -548,6 +549,17 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             if (digit >= 5) { isGood = true; return basePts; }
             if (digit >= 3) { isGood = true; return basePts - 4; }
             return 2;
+        }
+
+        // % Increased Damage with Bow Skills (quiver/ring mod) — direct damage multiplier for all bow builds
+        bool isDmgWithBows = (r.Contains("damagewithbow") || n.Contains("damagewithbow") ||
+                              (ContainsAny(r, "increased", "damage") && r.Contains("bow")) ||
+                              (ContainsAny(n, "increased", "damage") && n.Contains("bow")));
+        if (isDmgWithBows)
+        {
+            if (digit >= 5) { isGood = true; return 14; }
+            if (digit >= 3) { isGood = true; return 10; }
+            isGood = true; return 7;
         }
 
         // Charm (belt implicits) — AVERAGE

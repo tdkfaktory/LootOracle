@@ -85,13 +85,13 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             },
             new()
             {
-                Name = "Craft",
+                Name = "Craft Good",
                 Enabled = true,
                 Color = new SerializableColor { R = 0, G = 255, B = 255, A = 255 } // Cyan
             },
             new()
             {
-                Name = "Craft Good",
+                Name = "Craft",
                 Enabled = true,
                 Color = new SerializableColor { R = 30, G = 144, B = 255, A = 255 } // DodgerBlue
             },
@@ -758,8 +758,8 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         var ruleGod = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("God", StringComparison.OrdinalIgnoreCase));
         var ruleBis = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Good", StringComparison.OrdinalIgnoreCase));
         var ruleTrade = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Average", StringComparison.OrdinalIgnoreCase));
-        var ruleCraftCiano = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft", StringComparison.OrdinalIgnoreCase));
-        var ruleCraftBase = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft Good", StringComparison.OrdinalIgnoreCase));
+        var ruleCraftCiano = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft Good", StringComparison.OrdinalIgnoreCase));
+        var ruleCraftBase = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft", StringComparison.OrdinalIgnoreCase));
 
         if (isRare)
         {
@@ -783,12 +783,12 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         {
             if (ruleCraftCiano != null && goodTiersCount >= 2)
             {
-                classification = "Craft";
+                classification = "Craft Good";
                 retColor = ruleCraftCiano.Color.ToColor();
             }
             else if (ruleCraftBase != null && goodTiersCount >= 1)
             {
-                classification = "Craft Good";
+                classification = "Craft";
                 retColor = ruleCraftBase.Color.ToColor();
             }
         }

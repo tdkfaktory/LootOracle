@@ -309,6 +309,14 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         return false;
     }
 
+    // Special pool mods (Abyss, Companion, unique suffix pools) have no trailing digit in their raw name.
+    // ParseTier() defaults to 1 for these, but they are always T1 of their pool.
+    private static bool IsSpecialPoolMod(string rawName)
+    {
+        if (string.IsNullOrEmpty(rawName)) return false;
+        return !char.IsDigit(rawName[rawName.Length - 1]);
+    }
+
     private static int GetModScore(string name, string rawName, int digit, string itemClass, out bool isGood)
     {
         string n = name.ToLowerInvariant();
@@ -319,6 +327,9 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         // Hard exclude: on-kill, on-death, life/mana gained on hit
         if (ContainsAny(r, "kill", "death", "gained", "onhit") || ContainsAny(n, "kill", "death", "gained", "onhit"))
             return 0;
+
+        // Special pool mods have no trailing digit — treat as T1 (digit=9) for scoring
+        if (IsSpecialPoolMod(rawName)) digit = 9;
 
         // ── GOD TIER ────────────────────────────────────────────────────────────
 
@@ -522,6 +533,18 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 1;
         }
 
+        // % Increased Physical Damage (local weapon mod) — pure or hybrid with accuracy
+        bool isPctLocalPhys = (r.Contains("increasedphysical") || n.Contains("increasedphysical")) &&
+                              (r.Contains("physicaldamage") || n.Contains("physicaldamage"));
+        if (isPctLocalPhys)
+        {
+            bool hasAccuracyTax = r.Contains("accuracy") || n.Contains("accuracy");
+            int basePts = hasAccuracyTax ? 8 : 12;
+            if (digit >= 5) { isGood = true; return basePts; }
+            if (digit >= 3) { isGood = true; return basePts - 4; }
+            return 2;
+        }
+
         // Charm (belt implicits) — AVERAGE
         if (r.Contains("charm") || n.Contains("charm"))
             return 3;
@@ -549,6 +572,66 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         if (digit >= 5) return 3;
         if (digit >= 3) return 2;
         return 1;
+    }
+
+    private static bool IsWeaponSlot(string className)
+    {
+        string cls = (className ?? "").ToLowerInvariant();
+        return cls.Contains("bow") || cls.Contains("crossbow") ||
+               cls.Contains("staff") || cls.Contains("spear") || cls.Contains("mace") ||
+               cls.Contains("quarterstaff") || cls.Contains("sword") || cls.Contains("axe") ||
+               cls.Contains("wand") || cls.Contains("sceptre");
+    }
+
+    private static int GetWeaponDpsBonus(List<ItemMod> allMods, out string dpsBonusLabel)
+    {
+        dpsBonusLabel = "";
+        int bestPctPhysDigit = 0;
+        int bestFlatPhysDigit = 0;
+        int flatElemT1Count = 0;
+        int bestAtkSpdDigit = 0;
+
+        foreach (var mod in allMods)
+        {
+            string r = (mod.RawName ?? "").ToLowerInvariant();
+            string n = (mod.Name ?? "").ToLowerInvariant();
+            int d = IsSpecialPoolMod(mod.RawName) ? 9 : ParseTier(mod.RawName);
+
+            bool isPctPhys = (r.Contains("increasedphysical") || n.Contains("increasedphysical")) &&
+                             (r.Contains("physicaldamage") || n.Contains("physicaldamage")) &&
+                             !r.Contains("accuracy") && !n.Contains("accuracy");
+            bool isFlatPhys = (r.Contains("added") || n.Contains("added")) && (r.Contains("phys") || n.Contains("phys"));
+            bool isFlatElem = (r.Contains("added") || n.Contains("added")) &&
+                              (r.Contains("cold") || n.Contains("cold") ||
+                               r.Contains("lightning") || n.Contains("lightning") ||
+                               r.Contains("fire") || n.Contains("fire"));
+            bool isAtkSpd = r.Contains("attackspeed") || (r.Contains("attack") && r.Contains("speed")) ||
+                            n.Contains("attackspeed") || (n.Contains("attack") && n.Contains("speed"));
+
+            if (isPctPhys && d > bestPctPhysDigit) bestPctPhysDigit = d;
+            if (isFlatPhys && d > bestFlatPhysDigit) bestFlatPhysDigit = d;
+            if (isFlatElem && d >= 5) flatElemT1Count++;
+            if (isAtkSpd && d > bestAtkSpdDigit) bestAtkSpdDigit = d;
+        }
+
+        int dpsBonus = 0;
+        string label = "";
+
+        if (bestPctPhysDigit >= 7 && bestFlatPhysDigit >= 5)
+        { dpsBonus = 20; label = "GOD pDPS (T1% + FlatPhys)"; }
+        else if (bestPctPhysDigit >= 7)
+        { dpsBonus = 15; label = "GOD pDPS (T1%)"; }
+        else if (bestPctPhysDigit >= 5 && bestFlatPhysDigit >= 5)
+        { dpsBonus = 12; label = "High pDPS (T2%+FlatPhys)"; }
+        else if (bestPctPhysDigit >= 5)
+        { dpsBonus = 8; label = "Good pDPS (T2%)"; }
+        else if (flatElemT1Count >= 2)
+        { dpsBonus = 10; label = "High eDPS (2xT1 elem)"; }
+        else if (flatElemT1Count >= 1 && bestAtkSpdDigit >= 5)
+        { dpsBonus = 8; label = "Good eDPS (T1 elem+AtkSpd)"; }
+
+        dpsBonusLabel = dpsBonus > 0 ? $"DPS: +{dpsBonus} [{label}]" : "";
+        return dpsBonus;
     }
 
     private Color? EvaluateItem(ItemData itemData, out string debugInfo)
@@ -637,7 +720,13 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         if (comboModCount >= 3) comboBonus = 12;
         else if (comboModCount >= 2) comboBonus = 6;
 
-        int totalScore = rawScore + bonus + comboBonus;
+        // Weapon DPS bonus — rewards high-DPS weapons beyond individual mod scores
+        int dpsBonus = 0;
+        string dpsBonusLabel = "";
+        if (IsWeaponSlot(itemData.ClassName))
+            dpsBonus = GetWeaponDpsBonus(allMods, out dpsBonusLabel);
+
+        int totalScore = rawScore + bonus + comboBonus + dpsBonus;
 
         bool isRare = itemData.Rarity == ItemRarity.Rare;
         bool isMagic = itemData.Rarity == ItemRarity.Magic;
@@ -684,7 +773,8 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         }
 
         string profileName = Settings.ActiveBuildProfile?.Value ?? "Generic";
-        debugInfo = $"Classification: {classification}\nScore: {totalScore}/100 (Raw: {rawScore} + Density: {bonus} + Combo: {comboBonus}) | GoodTiers: {goodTiersCount} | ComboMods: {comboModCount} | RelevantMods: {totalRelevantMods}\nProfile: {profileName}\nMods:\n  * {string.Join("\n  * ", detailedMods)}";
+        string dpsLine = dpsBonus > 0 ? $"\n{dpsBonusLabel}" : "";
+        debugInfo = $"Classification: {classification}\nScore: {totalScore}/100 (Raw: {rawScore} + Density: {bonus} + Combo: {comboBonus} + DPS: {dpsBonus}) | GoodTiers: {goodTiersCount} | ComboMods: {comboModCount} | RelevantMods: {totalRelevantMods}\nProfile: {profileName}{dpsLine}\nMods:\n  * {string.Join("\n  * ", detailedMods)}";
 
         return retColor;
     }
@@ -700,6 +790,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         if (items == null || items.Count == 0) return;
 
         var mousePos = ImGui.GetMousePos();
+        bool debugDrawn = false;
 
         foreach (var slotItem in items.ToList())
         {
@@ -712,13 +803,14 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             string debugInfo = "";
             var highlightColor = EvaluateItem(itemData, out debugInfo);
 
-            if (Settings.DebugMode)
+            if (Settings.DebugMode && !debugDrawn)
             {
                 var rect = slotItem.GetClientRect();
                 if (rect.X <= mousePos.X && mousePos.X <= rect.X + rect.Width &&
                     rect.Y <= mousePos.Y && mousePos.Y <= rect.Y + rect.Height)
                 {
                     DrawModDebug(itemData, debugInfo, mousePos);
+                    debugDrawn = true;
                 }
             }
 

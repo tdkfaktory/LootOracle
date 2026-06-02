@@ -19,6 +19,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
     private int _selectedProfileIdx = 0;
     private string _newProfileName = "";
     private string _editingKeywords = "";
+    private string _editingClassFilter = "";
 
     // Bump when DefaultRules() changes — forces overwrite of stale saved rules on load.
     private const int CurrentRulesVersion = 37;
@@ -354,14 +355,14 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 5;
         }
 
-        // Critical Multiplier — GOD for all attack/spell builds
+        // Critical Multiplier — GOD at T1, GOOD at T2-T3, AVERAGE below
         bool isCritMult = (ContainsAny(r, "critical") || ContainsAny(n, "critical")) &&
                           (ContainsAny(r, "multiplier", "multi") || ContainsAny(n, "multiplier", "multi"));
         if (isCritMult)
         {
-            if (digit >= 5) { isGood = true; return 18; }
-            if (digit >= 3) { isGood = true; return 12; }
-            isGood = true; return 7;
+            if (digit >= 7) { isGood = true; return 18; }  // GOD - T1
+            if (digit >= 4) { isGood = true; return 10; }  // GOOD - T2/T3
+            return 4;                                        // AVERAGE - T4+
         }
 
         // ArmourApplies to Elemental Damage — GOD for Warrior/Mercenary
@@ -450,12 +451,12 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 2;
         }
 
-        // Flat Fire Damage -- GOOD but lower than Cold (fewer Cold builds this patch)
+        // Flat Fire Damage -- GOOD only at T1-T2, AVERAGE below
         if ((r.Contains("added") || n.Contains("added")) && (r.Contains("fire") || n.Contains("fire")))
         {
-            if (digit >= 5) { isGood = true; return 8; }
-            if (digit >= 3) { isGood = true; return 4; }
-            return 1;
+            if (digit >= 7) { isGood = true; return 8; }  // GOOD - T1/T2
+            if (digit >= 5) return 5;                      // AVERAGE - T3/T4
+            return 2;                                       // AVERAGE - T5+
         }
 
         // Critical Strike Chance (not multiplier — handled above)
@@ -734,6 +735,14 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
                 var prof = _profileManager.GetBuildProfile(profileName);
                 if (prof.ComboMods == null || prof.ComboMods.Count == 0) continue;
 
+                // Skip profile if item class does not match ClassFilter (empty = all classes)
+                if (prof.ClassFilter != null && prof.ClassFilter.Count > 0)
+                {
+                    string cls = (itemData.ClassName ?? "").ToLowerInvariant();
+                    bool classMatch = prof.ClassFilter.Any(f => cls.Contains(f.ToLowerInvariant()));
+                    if (!classMatch) continue;
+                }
+
                 int count = 0;
                 foreach (var mod in allMods)
                 {
@@ -927,6 +936,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
                 _selectedProfileIdx = i;
                 var p = _profileManager.GetBuildProfile(bpArr[i]);
                 _editingKeywords = string.Join(", ", p.ComboMods ?? new List<string>());
+                _editingClassFilter = string.Join(", ", p.ClassFilter ?? new List<string>());
             }
             ImGui.SameLine();
             if (bpArr.Length > 1 && ImGui.SmallButton("Del"))
@@ -961,6 +971,20 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             {
                 var prof = _profileManager.GetBuildProfile(selName);
                 prof.ComboMods = _editingKeywords
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(k => k.Trim().ToLowerInvariant())
+                    .Where(k => k.Length > 0)
+                    .ToList();
+                _profileManager.SetBuildProfile(selName, prof);
+            }
+            ImGui.TextDisabled("Class filter (comma-separated, empty=all): bow, quiver, staff, ring ...");
+            ImGui.SetNextItemWidth(-70);
+            ImGui.InputText("##cf", ref _editingClassFilter, 256);
+            ImGui.SameLine();
+            if (ImGui.Button("Save##cf"))
+            {
+                var prof = _profileManager.GetBuildProfile(selName);
+                prof.ClassFilter = _editingClassFilter
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(k => k.Trim().ToLowerInvariant())
                     .Where(k => k.Length > 0)

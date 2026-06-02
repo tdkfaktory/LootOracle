@@ -9,6 +9,9 @@ public class BuildProfile
 {
     public string Description { get; set; } = "";
     public List<string> ComboMods { get; set; } = new();
+    // Item class substrings this profile applies to (empty = all classes)
+    // Examples: ["bow", "quiver"] or ["staff", "spear", "quarterstaff"]
+    public List<string> ClassFilter { get; set; } = new();
 }
 
 public class ProfileManager
@@ -174,38 +177,45 @@ public class ProfileManager
         {
             ["Generic"] = new BuildProfile
             {
-                Description = "Universal — sem combo bonus",
-                ComboMods = new List<string>()
+                Description = "Universal — no combo bonus",
+                ComboMods = new List<string>(),
+                ClassFilter = new List<string>()
             },
             ["Ranger_IceShot"] = new BuildProfile
             {
                 Description = "Ice Shot Deadeye — Obliterator Bow",
-                ComboMods = new List<string> { "cold", "phys", "critical", "attackspeed", "gemlevel", "skilllevel" }
+                ComboMods = new List<string> { "cold", "phys", "critical", "attackspeed", "gemlevel", "skilllevel" },
+                ClassFilter = new List<string> { "bow", "quiver" }
             },
             ["Monk_Quarterstaff"] = new BuildProfile
             {
                 Description = "Monk — Melee Quarterstaff",
-                ComboMods = new List<string> { "phys", "melee", "critical", "attackspeed", "gemlevel", "skilllevel" }
+                ComboMods = new List<string> { "phys", "melee", "critical", "attackspeed", "gemlevel", "skilllevel" },
+                ClassFilter = new List<string> { "staff", "spear", "quarterstaff", "gloves", "ring", "amulet" }
             },
             ["Stormweaver_Spark"] = new BuildProfile
             {
                 Description = "Stormweaver — Spark Caster",
-                ComboMods = new List<string> { "spell", "lightning", "castspeed", "critical", "gemlevel", "skilllevel", "mana" }
+                ComboMods = new List<string> { "spell", "lightning", "castspeed", "critical", "gemlevel", "skilllevel", "mana" },
+                ClassFilter = new List<string> { "wand", "foci", "focus", "staves", "ring", "amulet" }
             },
             ["Tactician_Crossbow"] = new BuildProfile
             {
                 Description = "Tactician — Elemental Crossbow",
-                ComboMods = new List<string> { "fire", "cold", "lightning", "elemental", "attackspeed", "gemlevel", "skilllevel" }
+                ComboMods = new List<string> { "fire", "cold", "lightning", "elemental", "attackspeed", "gemlevel", "skilllevel" },
+                ClassFilter = new List<string> { "crossbow", "quiver", "gloves", "ring", "amulet" }
             },
             ["Titan_Hammer"] = new BuildProfile
             {
                 Description = "Titan — Hammer of the Gods",
-                ComboMods = new List<string> { "phys", "melee", "critical", "attackspeed", "gemlevel", "skilllevel" }
+                ComboMods = new List<string> { "phys", "melee", "critical", "attackspeed", "gemlevel", "skilllevel" },
+                ClassFilter = new List<string> { "mace", "sword", "axe", "sceptre", "gloves", "ring", "amulet", "belt" }
             },
             ["SpiritWalker_Twister"] = new BuildProfile
             {
                 Description = "Spirit Walker — Twister Huntress",
-                ComboMods = new List<string> { "cold", "lightning", "attackspeed", "critical", "gemlevel", "skilllevel" }
+                ComboMods = new List<string> { "cold", "lightning", "attackspeed", "critical", "gemlevel", "skilllevel" },
+                ClassFilter = new List<string> { "spear", "bow", "quiver", "gloves", "ring", "amulet" }
             }
         };
     }

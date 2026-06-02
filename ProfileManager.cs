@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
@@ -144,40 +144,39 @@ public class ProfileManager
         {
             ["Generic"] = new BuildProfile
             {
-                Description = "Universal â€” sem combo bonus",
+                Description = "Universal — sem combo bonus",
                 ComboMods = new List<string>()
             },
             ["Ranger_IceShot"] = new BuildProfile
             {
-                Description = "Ice Shot Deadeye â€” Obliterator Bow",
+                Description = "Ice Shot Deadeye — Obliterator Bow",
                 ComboMods = new List<string> { "cold", "phys", "critical", "attackspeed", "gemlevel", "skilllevel" }
             },
             ["Monk_Quarterstaff"] = new BuildProfile
             {
-                Description = "Monk â€” Melee Quarterstaff",
+                Description = "Monk — Melee Quarterstaff",
                 ComboMods = new List<string> { "phys", "melee", "critical", "attackspeed", "gemlevel", "skilllevel" }
             },
             ["Stormweaver_Spark"] = new BuildProfile
             {
-                Description = "Stormweaver â€” Spark Caster",
+                Description = "Stormweaver — Spark Caster",
                 ComboMods = new List<string> { "spell", "lightning", "castspeed", "critical", "gemlevel", "skilllevel", "mana" }
             },
             ["Tactician_Crossbow"] = new BuildProfile
             {
-                Description = "Tactician â€” Elemental Crossbow",
+                Description = "Tactician — Elemental Crossbow",
                 ComboMods = new List<string> { "fire", "cold", "lightning", "elemental", "attackspeed", "gemlevel", "skilllevel" }
             },
             ["Titan_Hammer"] = new BuildProfile
             {
-                Description = "Titan â€” Hammer of the Gods",
+                Description = "Titan — Hammer of the Gods",
                 ComboMods = new List<string> { "phys", "melee", "critical", "attackspeed", "gemlevel", "skilllevel" }
             },
             ["SpiritWalker_Twister"] = new BuildProfile
             {
-                Description = "Spirit Walker â€” Twister Huntress",
+                Description = "Spirit Walker — Twister Huntress",
                 ComboMods = new List<string> { "cold", "lightning", "attackspeed", "critical", "gemlevel", "skilllevel" }
             }
         };
     }
 }
-

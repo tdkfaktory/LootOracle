@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Drawing;
 using ExileCore2.Shared.Attributes;
 using ExileCore2.Shared.Interfaces;
@@ -50,7 +50,7 @@ public class LootOracleSettings : ISettings
     [IgnoreMenu]
     public bool DebugMode { get; set; } = false;
 
-    // Legacy â€” kept for backwards compat, not used
+    // Legacy — kept for backwards compat, not used
     [IgnoreMenu]
     public TextNode ActiveProfile { get; set; } = new("Default");
 
@@ -60,4 +60,3 @@ public class LootOracleSettings : ISettings
     [IgnoreMenu]
     public TextNode ActiveBuildProfile { get; set; } = new("Generic");
 }
-

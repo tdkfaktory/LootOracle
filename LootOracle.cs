@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -17,7 +17,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
     private CachedValue<List<ServerInventory.InventSlotItem>> _inventoryCache;
     private ProfileManager _profileManager;
 
-    // Bump when DefaultRules() changes â€” forces overwrite of stale saved rules on load.
+    // Bump when DefaultRules() changes — forces overwrite of stale saved rules on load.
     private const int CurrentRulesVersion = 36;
 
     public override bool Initialise()
@@ -157,18 +157,18 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
 
         bool hasPhys = ContainsAny(raw, "phys") || ContainsAny(name, "phys");
         bool hasCold = ContainsAny(raw, "cold") || ContainsAny(name, "cold");
-        // "lightning" specifically â€” avoids "blight", "enlighten", "highlight"
+        // "lightning" specifically — avoids "blight", "enlighten", "highlight"
         bool hasLight = raw.Contains("lightning") || name.Contains("lightning");
-        // "fire" for damage â€” FireResist caught by hasResist separately
+        // "fire" for damage — FireResist caught by hasResist separately
         bool hasFire = (raw.Contains("fire") || name.Contains("fire")) && !raw.Contains("resist") && !name.Contains("resist");
         bool hasAdded = ContainsAny(raw, "added") || ContainsAny(name, "added");
         bool hasChaos = ContainsAny(raw, "chaos") || ContainsAny(name, "chaos");
-        // % increased damage (fire/cold/lightning/phys/chaos) â€” catches IncreasedFireDamage, IncreasedChaosDamage, etc.
+        // % increased damage (fire/cold/lightning/phys/chaos) — catches IncreasedFireDamage, IncreasedChaosDamage, etc.
         // Excludes resist mods, damage taken, enemy damage
         bool hasIncreasedElemDmg = (hasCold || hasLight || hasFire || hasPhys || hasChaos) &&
                                     (ContainsAny(raw, "increased", "damage") || ContainsAny(name, "increased", "damage")) &&
                                     !ContainsAny(raw, "resist", "taken", "enemy") && !ContainsAny(name, "resist", "taken", "enemy");
-        // Item Rarity â€” confirmed name: ItemFoundRarityIncrease / ItemFoundRarityIncreasePrefix
+        // Item Rarity — confirmed name: ItemFoundRarityIncrease / ItemFoundRarityIncreasePrefix
         bool hasRarity = ContainsAny(raw, "itemfoundrarity", "rarityfound") || ContainsAny(name, "itemfoundrarity", "rarityfound");
         bool hasCrit = ContainsAny(raw, "critical") || ContainsAny(name, "critical");
         bool hasAttackSpeed = (raw.Contains("attackspeed") || name.Contains("attackspeed") ||
@@ -178,18 +178,18 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
                             (ContainsAny(raw, "cast") && ContainsAny(raw, "speed")) ||
                             (ContainsAny(name, "cast") && ContainsAny(name, "speed"));
 
-        // Life â€” exclude regen, decay, leech, on-kill/per-kill/on-hit variants
+        // Life — exclude regen, decay, leech, on-kill/per-kill/on-hit variants
         bool hasLife = (ContainsAny(raw, "life") || ContainsAny(name, "life")) &&
                        !ContainsAny(raw, "regen", "decay", "leech", "kill", "death", "onhit", "gained") &&
                        !ContainsAny(name, "regen", "decay", "leech", "kill", "death", "onhit", "gained");
-        // Mana â€” exclude regen, leech, on-kill/on-hit variants
+        // Mana — exclude regen, leech, on-kill/on-hit variants
         bool hasMana = (ContainsAny(raw, "mana") || ContainsAny(name, "mana")) &&
                        !ContainsAny(raw, "regen", "leech", "kill", "death", "gained") &&
                        !ContainsAny(name, "regen", "leech", "kill", "death", "gained");
 
         bool hasSpirit = ContainsAny(raw, "spirit") || ContainsAny(name, "spirit");
 
-        // Resistances: strict â€” must contain "resist" or "allelemental"
+        // Resistances: strict — must contain "resist" or "allelemental"
         bool hasResist = ContainsAny(raw, "resist", "allelemental") || ContainsAny(name, "resist", "allelemental");
 
         // Energy Shield: must contain both "energy" and "shield" to avoid false positives
@@ -215,7 +215,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
                    ContainsAny(raw, "project") || ContainsAny(name, "project");
         }
 
-        // 2. Quiver (global mods â€” no Local prefix)
+        // 2. Quiver (global mods — no Local prefix)
         if (cls.Contains("quiver"))
         {
             return (hasAdded && (hasPhys || hasCold || hasLight || hasFire)) ||
@@ -320,9 +320,9 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         if (ContainsAny(r, "kill", "death", "gained", "onhit") || ContainsAny(n, "kill", "death", "gained", "onhit"))
             return 0;
 
-        // â”€â”€ GOD TIER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── GOD TIER ────────────────────────────────────────────────────────────
 
-        // Skill Gem Levels â€” always GOD regardless of tier
+        // Skill Gem Levels — always GOD regardless of tier
         bool isSkillLevel = (r.Contains("skilllevel") || r.Contains("skillgem") || r.Contains("gemlevel") ||
                              n.Contains("skilllevel") || n.Contains("skillgem") || n.Contains("gemlevel")) &&
                             !r.Contains("localbase") && !n.Contains("localbase");
@@ -337,7 +337,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 5;
         }
 
-        // Critical Multiplier â€” GOD for all attack/spell builds
+        // Critical Multiplier — GOD for all attack/spell builds
         bool isCritMult = (ContainsAny(r, "critical") || ContainsAny(n, "critical")) &&
                           (ContainsAny(r, "multiplier", "multi") || ContainsAny(n, "multiplier", "multi"));
         if (isCritMult)
@@ -347,7 +347,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             isGood = true; return 7;
         }
 
-        // ArmourApplies to Elemental Damage â€” GOD for Warrior/Mercenary
+        // ArmourApplies to Elemental Damage — GOD for Warrior/Mercenary
         bool isArmourElem = (r.Contains("armourapplies") || n.Contains("armourapplies") ||
                              (ContainsAny(r, "armour", "armor") && r.Contains("elemental")) ||
                              (ContainsAny(n, "armour", "armor") && n.Contains("elemental")));
@@ -358,7 +358,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             isGood = true; return 8;
         }
 
-        // Deflection (EvasionGrantsDeflection, ArmourGrantsDeflection) â€” GOD defensive multiplier
+        // Deflection (EvasionGrantsDeflection, ArmourGrantsDeflection) — GOD defensive multiplier
         if (ContainsAny(r, "deflect", "deflection") || ContainsAny(n, "deflect", "deflection"))
         {
             if (digit >= 5) { isGood = true; return 14; }
@@ -369,13 +369,13 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         // Resistance T1 (digit >= 7 in PoE2 absolute tier scale)
         if (r.Contains("resist") || n.Contains("resist") || r.Contains("resistance") || n.Contains("resistance"))
         {
-            if (digit >= 7) { isGood = true; return 14; }  // GOD â€” T1
-            if (digit >= 5) { isGood = true; return 8; }   // BOM â€” T2/T3
-            if (digit >= 3) { isGood = true; return 5; }   // BOM â€” T3/T4 border
-            return 3;                                        // MÃ‰DIO â€” T5+
+            if (digit >= 7) { isGood = true; return 14; }  // GOD - T1
+            if (digit >= 5) { isGood = true; return 8; }   // GOOD - T2/T3
+            if (digit >= 3) { isGood = true; return 5; }   // GOOD - T3/T4 border
+            return 3;                                        // AVERAGE - T5+
         }
 
-        // â”€â”€ BOM TIER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── GOOD TIER ────────────────────────────────────────────────────────────
 
         // Spirit
         if (r.Contains("spirit") || n.Contains("spirit"))
@@ -409,7 +409,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             isGood = true; return 5;
         }
 
-        // Flat Cold Damage â€” BOM (best elemental for Cold builds this patch)
+        // Flat Cold Damage -- GOOD (best elemental for Cold builds this patch)
         if ((r.Contains("added") || n.Contains("added")) && (r.Contains("cold") || n.Contains("cold")))
         {
             if (digit >= 5) { isGood = true; return 12; }
@@ -417,7 +417,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 2;
         }
 
-        // Flat Physical Damage â€” BOM
+        // Flat Physical Damage — GOOD
         if ((r.Contains("added") || n.Contains("added")) && (r.Contains("phys") || n.Contains("phys")))
         {
             if (digit >= 5) { isGood = true; return 12; }
@@ -425,7 +425,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 2;
         }
 
-        // Flat Lightning Damage â€” BOM
+        // Flat Lightning Damage — GOOD
         if ((r.Contains("added") || n.Contains("added")) && (r.Contains("lightning") || n.Contains("lightning")))
         {
             if (digit >= 5) { isGood = true; return 12; }
@@ -433,7 +433,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 2;
         }
 
-        // Flat Fire Damage â€” BOM but lower than Cold (fewer Cold builds this patch)
+        // Flat Fire Damage -- GOOD but lower than Cold (fewer Cold builds this patch)
         if ((r.Contains("added") || n.Contains("added")) && (r.Contains("fire") || n.Contains("fire")))
         {
             if (digit >= 5) { isGood = true; return 8; }
@@ -441,7 +441,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 1;
         }
 
-        // Critical Strike Chance (not multiplier â€” handled above)
+        // Critical Strike Chance (not multiplier — handled above)
         if (ContainsAny(r, "critical") || ContainsAny(n, "critical"))
         {
             if (digit >= 5) { isGood = true; return 12; }
@@ -462,7 +462,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 2;
         }
 
-        // â”€â”€ MÃ‰DIO TIER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── AVERAGE TIER ──────────────────────────────────────────────────────────
 
         // Item Rarity
         if (ContainsAny(r, "itemfoundrarity", "rarityfound") || ContainsAny(n, "itemfoundrarity", "rarityfound"))
@@ -513,7 +513,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         if ((r.Contains("project") || n.Contains("project")) && !ContainsAny(r, "damage") && !ContainsAny(n, "damage"))
             return 3;
 
-        // Ailment mods â€” MÃ‰DIO
+        // Ailment mods — AVERAGE
         if (ContainsAny(r, "ailment", "freeze", "shock", "bleed", "poison", "ignite") ||
             ContainsAny(n, "ailment", "freeze", "shock", "bleed", "poison", "ignite"))
         {
@@ -522,11 +522,11 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 1;
         }
 
-        // Charm (belt implicits) â€” MÃ‰DIO
+        // Charm (belt implicits) — AVERAGE
         if (r.Contains("charm") || n.Contains("charm"))
             return 3;
 
-        // Mana flat â€” MÃ‰DIO only for caster weapons/off-hands, MAU (score=1) elsewhere
+        // Mana flat -- AVERAGE only for caster weapons/off-hands, LOW (score=1) elsewhere
         if ((r.Contains("mana") || n.Contains("mana")) && !ContainsAny(r, "regene") && !ContainsAny(n, "regene"))
         {
             bool isCasterSlot = cls.Contains("wand") || cls.Contains("staves") ||
@@ -539,13 +539,13 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             return 1;
         }
 
-        // â”€â”€ MAU / SOFT EXCLUDE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── LOW / SOFT EXCLUDE ───────────────────────────────────────────────────
 
-        // Life Regen â€” MAU (score=1, isGood=false)
+        // Life Regen — LOW (score=1, isGood=false)
         if ((r.Contains("life") || n.Contains("life")) && (r.Contains("regene") || n.Contains("regene")))
             return 1;
 
-        // Default fallback â€” unknown mod, treat as low value
+        // Default fallback — unknown mod, treat as low value
         if (digit >= 5) return 3;
         if (digit >= 3) return 2;
         return 1;
@@ -624,7 +624,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             }
         }
 
-        // Density bonus â€” rewards having many relevant mods but cannot compensate for low quality.
+        // Density bonus — rewards having many relevant mods but cannot compensate for low quality.
         int bonus = 0;
         if (totalRelevantMods >= 6) bonus = 15;
         else if (totalRelevantMods == 5) bonus = 10;
@@ -632,7 +632,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         else if (totalRelevantMods == 3) bonus = 3;
         else if (totalRelevantMods == 2) bonus = 1;
 
-        // Combo bonus â€” synergistic offensive mods matching the active build profile
+        // Combo bonus — synergistic offensive mods matching the active build profile
         int comboBonus = 0;
         if (comboModCount >= 3) comboBonus = 12;
         else if (comboModCount >= 2) comboBonus = 6;
@@ -840,5 +840,3 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         catch { return new(); }
     }
 }
-
-

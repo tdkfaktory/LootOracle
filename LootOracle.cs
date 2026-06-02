@@ -604,7 +604,8 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
     private static int GetWeaponDpsBonus(List<ItemMod> allMods, out string dpsBonusLabel)
     {
         dpsBonusLabel = "";
-        int bestPctPhysDigit = 0;
+        int bestPctPhysDigit = 0;       // pure % phys (no accuracy)
+        int bestPctPhysHybridDigit = 0; // % phys + accuracy (slightly penalised)
         int bestFlatPhysDigit = 0;
         int flatElemT1Count = 0;
         int bestAtkSpdDigit = 0;
@@ -615,9 +616,10 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             string n = (mod.Name ?? "").ToLowerInvariant();
             int d = IsSpecialPoolMod(mod.RawName) ? 9 : ParseTier(mod.RawName);
 
-            bool isPctPhys = (r.Contains("increasedphysical") || n.Contains("increasedphysical")) &&
-                             (r.Contains("physicaldamage") || n.Contains("physicaldamage")) &&
-                             !r.Contains("accuracy") && !n.Contains("accuracy");
+            bool isPctPhysBase = (r.Contains("increasedphysical") || n.Contains("increasedphysical")) &&
+                                 (r.Contains("physicaldamage") || n.Contains("physicaldamage"));
+            bool hasAccuracy = r.Contains("accuracy") || n.Contains("accuracy");
+
             bool isFlatPhys = (r.Contains("added") || n.Contains("added")) && (r.Contains("phys") || n.Contains("phys"));
             bool isFlatElem = (r.Contains("added") || n.Contains("added")) &&
                               (r.Contains("cold") || n.Contains("cold") ||
@@ -626,27 +628,36 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             bool isAtkSpd = r.Contains("attackspeed") || (r.Contains("attack") && r.Contains("speed")) ||
                             n.Contains("attackspeed") || (n.Contains("attack") && n.Contains("speed"));
 
-            if (isPctPhys && d > bestPctPhysDigit) bestPctPhysDigit = d;
+            if (isPctPhysBase && !hasAccuracy && d > bestPctPhysDigit) bestPctPhysDigit = d;
+            if (isPctPhysBase && hasAccuracy && d > bestPctPhysHybridDigit) bestPctPhysHybridDigit = d;
             if (isFlatPhys && d > bestFlatPhysDigit) bestFlatPhysDigit = d;
             if (isFlatElem && d >= 5) flatElemT1Count++;
             if (isAtkSpd && d > bestAtkSpdDigit) bestAtkSpdDigit = d;
         }
 
+        // Best pct phys = pure if available, else hybrid (penalised 1 tier)
+        int effectivePctPhys = bestPctPhysDigit > 0 ? bestPctPhysDigit
+                             : (bestPctPhysHybridDigit > 0 ? bestPctPhysHybridDigit - 2 : 0);
+
         int dpsBonus = 0;
         string label = "";
 
-        if (bestPctPhysDigit >= 7 && bestFlatPhysDigit >= 5)
-        { dpsBonus = 20; label = "GOD pDPS (T1% + FlatPhys)"; }
-        else if (bestPctPhysDigit >= 7)
+        // pDPS evaluation takes priority over eDPS
+        if (effectivePctPhys >= 7 && bestFlatPhysDigit >= 5)
+        { dpsBonus = 20; label = "GOD pDPS (T1%+FlatPhys)"; }
+        else if (effectivePctPhys >= 7)
         { dpsBonus = 15; label = "GOD pDPS (T1%)"; }
-        else if (bestPctPhysDigit >= 5 && bestFlatPhysDigit >= 5)
-        { dpsBonus = 12; label = "High pDPS (T2%+FlatPhys)"; }
-        else if (bestPctPhysDigit >= 5)
-        { dpsBonus = 8; label = "Good pDPS (T2%)"; }
+        else if (effectivePctPhys >= 5 && bestFlatPhysDigit >= 5)
+        { dpsBonus = 14; label = "High pDPS (T2%+FlatPhys)"; }
+        else if (effectivePctPhys >= 5)
+        { dpsBonus = 10; label = "Good pDPS (T2%)"; }
+        else if (effectivePctPhys >= 3 && bestFlatPhysDigit >= 5)
+        { dpsBonus = 8; label = "Decent pDPS (T3%+FlatPhys)"; }
+        // eDPS only if no significant pDPS
         else if (flatElemT1Count >= 2)
         { dpsBonus = 10; label = "High eDPS (2xT1 elem)"; }
         else if (flatElemT1Count >= 1 && bestAtkSpdDigit >= 5)
-        { dpsBonus = 8; label = "Good eDPS (T1 elem+AtkSpd)"; }
+        { dpsBonus = 6; label = "Good eDPS (T1 elem+AtkSpd)"; }
 
         dpsBonusLabel = dpsBonus > 0 ? $"DPS: +{dpsBonus} [{label}]" : "";
         return dpsBonus;

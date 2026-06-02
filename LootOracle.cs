@@ -643,21 +643,28 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         string label = "";
 
         // pDPS evaluation takes priority over eDPS
-        if (effectivePctPhys >= 7 && bestFlatPhysDigit >= 5)
-        { dpsBonus = 20; label = "GOD pDPS (T1%+FlatPhys)"; }
+        // GOD = T1 pure % (digit>=9, no accuracy tax) + FlatPhys T1
+        if (effectivePctPhys >= 9 && bestFlatPhysDigit >= 7)
+        { dpsBonus = 20; label = "GOD pDPS (T1%+FlatPhys T1)"; }
+        else if (effectivePctPhys >= 9)
+        { dpsBonus = 15; label = "GOD pDPS (T1% pure)"; }
+        // Good = T1-T2 % + decent FlatPhys, or T2% alone
+        else if (effectivePctPhys >= 7 && bestFlatPhysDigit >= 5)
+        { dpsBonus = 12; label = "Good pDPS (T1-2%+FlatPhys)"; }
         else if (effectivePctPhys >= 7)
-        { dpsBonus = 15; label = "GOD pDPS (T1%)"; }
+        { dpsBonus = 8; label = "Good pDPS (T1-2%)"; }
+        else if (effectivePctPhys >= 5 && bestFlatPhysDigit >= 7)
+        { dpsBonus = 8; label = "Good pDPS (T2-3%+FlatPhys T1)"; }
+        // Decent = lower tiers, just adds a small bonus
         else if (effectivePctPhys >= 5 && bestFlatPhysDigit >= 5)
-        { dpsBonus = 14; label = "High pDPS (T2%+FlatPhys)"; }
-        else if (effectivePctPhys >= 5)
-        { dpsBonus = 10; label = "Good pDPS (T2%)"; }
+        { dpsBonus = 5; label = "Decent pDPS (T3%+FlatPhys)"; }
         else if (effectivePctPhys >= 3 && bestFlatPhysDigit >= 5)
-        { dpsBonus = 8; label = "Decent pDPS (T3%+FlatPhys)"; }
+        { dpsBonus = 3; label = "Decent pDPS (hybrid+FlatPhys)"; }
         // eDPS only if no significant pDPS
         else if (flatElemT1Count >= 2)
-        { dpsBonus = 10; label = "High eDPS (2xT1 elem)"; }
+        { dpsBonus = 8; label = "High eDPS (2xT1 elem)"; }
         else if (flatElemT1Count >= 1 && bestAtkSpdDigit >= 5)
-        { dpsBonus = 6; label = "Good eDPS (T1 elem+AtkSpd)"; }
+        { dpsBonus = 5; label = "Good eDPS (T1 elem+AtkSpd)"; }
 
         dpsBonusLabel = dpsBonus > 0 ? $"DPS: +{dpsBonus} [{label}]" : "";
         return dpsBonus;

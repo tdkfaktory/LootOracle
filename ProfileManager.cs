@@ -138,6 +138,36 @@ public class ProfileManager
         return profile;
     }
 
+    public void SetBuildProfile(string name, BuildProfile profile)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+        _buildProfiles[name] = profile;
+        _cachedBuildProfileNames = null;
+        SaveBuildProfiles();
+    }
+
+    public void DeleteBuildProfile(string name)
+    {
+        if (_buildProfiles.Count <= 1) return;
+        if (_buildProfiles.Remove(name))
+        {
+            _cachedBuildProfileNames = null;
+            SaveBuildProfiles();
+        }
+    }
+
+    public void RenameBuildProfile(string oldName, string newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName) || _buildProfiles.ContainsKey(newName)) return;
+        if (_buildProfiles.TryGetValue(oldName, out var prof))
+        {
+            _buildProfiles.Remove(oldName);
+            _buildProfiles[newName] = prof;
+            _cachedBuildProfileNames = null;
+            SaveBuildProfiles();
+        }
+    }
+
     private static Dictionary<string, BuildProfile> CreateDefaultBuildProfiles()
     {
         return new Dictionary<string, BuildProfile>

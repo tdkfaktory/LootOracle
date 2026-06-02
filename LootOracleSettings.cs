@@ -56,7 +56,4 @@ public class LootOracleSettings : ISettings
 
     [IgnoreMenu]
     public TextNode CurrentQuery { get; set; } = new("");
-
-    [IgnoreMenu]
-    public TextNode ActiveBuildProfile { get; set; } = new("Generic");
 }

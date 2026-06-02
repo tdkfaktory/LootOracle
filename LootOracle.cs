@@ -16,6 +16,9 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
 {
     private CachedValue<List<ServerInventory.InventSlotItem>> _inventoryCache;
     private ProfileManager _profileManager;
+    private int _selectedProfileIdx = 0;
+    private string _newProfileName = "";
+    private string _editingKeywords = "";
 
     // Bump when DefaultRules() changes — forces overwrite of stale saved rules on load.
     private const int CurrentRulesVersion = 36;
@@ -679,9 +682,6 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             }
         }
 
-        var activeProfile = _profileManager?.GetBuildProfile(Settings.ActiveBuildProfile.Value);
-        int comboModCount = 0;
-
         foreach (var mod in allMods)
         {
             bool relevant = IsModRelevant(itemData.ClassName, mod.Name, mod.RawName);
@@ -697,13 +697,6 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
                 rawScore += points;
 
                 detailedMods.Add($"{mod.Name} [AbsTier {rawDigit} (+{points}pts)]");
-
-                if (IsOffensiveSlot(itemData.ClassName) &&
-                    ModMatchesComboKeyword(
-                        (mod.RawName ?? "").ToLowerInvariant(),
-                        (mod.Name ?? "").ToLowerInvariant(),
-                        activeProfile?.ComboMods))
-                    comboModCount++;
             }
         }
 
@@ -715,10 +708,38 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         else if (totalRelevantMods == 3) bonus = 3;
         else if (totalRelevantMods == 2) bonus = 1;
 
-        // Combo bonus — synergistic offensive mods matching the active build profile
+        // Combo bonus — evaluate ALL build profiles, take the best match
         int comboBonus = 0;
-        if (comboModCount >= 3) comboBonus = 12;
-        else if (comboModCount >= 2) comboBonus = 6;
+        string bestProfileName = "none";
+        int bestComboCount = 0;
+
+        if (IsOffensiveSlot(itemData.ClassName) && _profileManager != null)
+        {
+            foreach (var profileName in _profileManager.BuildProfileNames)
+            {
+                var prof = _profileManager.GetBuildProfile(profileName);
+                if (prof.ComboMods == null || prof.ComboMods.Count == 0) continue;
+
+                int count = 0;
+                foreach (var mod in allMods)
+                {
+                    if (!IsModRelevant(itemData.ClassName, mod.Name, mod.RawName)) continue;
+                    if (ModMatchesComboKeyword(
+                            (mod.RawName ?? "").ToLowerInvariant(),
+                            (mod.Name ?? "").ToLowerInvariant(),
+                            prof.ComboMods))
+                        count++;
+                }
+                if (count > bestComboCount)
+                {
+                    bestComboCount = count;
+                    bestProfileName = profileName;
+                }
+            }
+        }
+
+        if (bestComboCount >= 3) comboBonus = 12;
+        else if (bestComboCount >= 2) comboBonus = 6;
 
         // Weapon DPS bonus — rewards high-DPS weapons beyond individual mod scores
         int dpsBonus = 0;
@@ -772,9 +793,9 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             }
         }
 
-        string profileName = Settings.ActiveBuildProfile?.Value ?? "Generic";
         string dpsLine = dpsBonus > 0 ? $"\n{dpsBonusLabel}" : "";
-        debugInfo = $"Classification: {classification}\nScore: {totalScore}/100 (Raw: {rawScore} + Density: {bonus} + Combo: {comboBonus} + DPS: {dpsBonus}) | GoodTiers: {goodTiersCount} | ComboMods: {comboModCount} | RelevantMods: {totalRelevantMods}\nProfile: {profileName}{dpsLine}\nMods:\n  * {string.Join("\n  * ", detailedMods)}";
+        string comboLine = comboBonus > 0 ? $" [{bestProfileName}, {bestComboCount} mods]" : "";
+        debugInfo = $"Classification: {classification}\nScore: {totalScore}/100 (Raw: {rawScore} + Density: {bonus} + Combo: {comboBonus} + DPS: {dpsBonus}) | GoodTiers: {goodTiersCount} | RelevantMods: {totalRelevantMods}{comboLine}{dpsLine}\nMods:\n  * {string.Join("\n  * ", detailedMods)}";
 
         return retColor;
     }
@@ -874,18 +895,65 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         base.DrawSettings();
         ImGui.Separator();
 
-        // Build Profile selector
-        ImGui.Text("Build Profile  (affects Combo Bonus)");
-        var buildProfileNames = _profileManager?.BuildProfileNames ?? new System.Collections.Generic.List<string> { "Generic" };
-        int currentProfileIdx = buildProfileNames.IndexOf(Settings.ActiveBuildProfile.Value);
-        if (currentProfileIdx < 0) currentProfileIdx = 0;
-        var profileArray = buildProfileNames.ToArray();
-        if (ImGui.Combo("##buildprofile", ref currentProfileIdx, profileArray, profileArray.Length))
-            Settings.ActiveBuildProfile.Value = profileArray[currentProfileIdx];
+        // Build Profiles editor — all profiles evaluated simultaneously
+        ImGui.Text("Build Profiles  (all evaluated -- combo bonus uses best match)");
+        ImGui.TextDisabled("Each profile defines keywords for combo detection. Best match wins.");
+        ImGui.Separator();
 
-        var activeProf = _profileManager?.GetBuildProfile(Settings.ActiveBuildProfile.Value);
-        if (activeProf != null && !string.IsNullOrEmpty(activeProf.Description))
-            ImGui.TextDisabled(activeProf.Description);
+        var bpNames = _profileManager?.BuildProfileNames ?? new List<string>();
+        var bpArr = bpNames.ToArray();
+        if (_selectedProfileIdx >= bpArr.Length) _selectedProfileIdx = 0;
+
+        for (int i = 0; i < bpArr.Length; i++)
+        {
+            ImGui.PushID(i);
+            bool sel = (_selectedProfileIdx == i);
+            if (ImGui.Selectable(bpArr[i], sel, ImGuiSelectableFlags.None, new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X - 50, 0)))
+            {
+                _selectedProfileIdx = i;
+                var p = _profileManager.GetBuildProfile(bpArr[i]);
+                _editingKeywords = string.Join(", ", p.ComboMods ?? new List<string>());
+            }
+            ImGui.SameLine();
+            if (bpArr.Length > 1 && ImGui.SmallButton("Del"))
+            {
+                _profileManager.DeleteBuildProfile(bpArr[i]);
+                if (_selectedProfileIdx >= bpArr.Length - 1) _selectedProfileIdx = 0;
+                _editingKeywords = "";
+            }
+            ImGui.PopID();
+        }
+
+        ImGui.Spacing();
+        ImGui.InputText("##newprofname", ref _newProfileName, 64);
+        ImGui.SameLine();
+        if (ImGui.Button("Add Profile") && !string.IsNullOrWhiteSpace(_newProfileName))
+        {
+            _profileManager?.SetBuildProfile(_newProfileName.Trim(), new BuildProfile { Description = "", ComboMods = new List<string>() });
+            _newProfileName = "";
+        }
+
+        ImGui.Separator();
+
+        if (bpArr.Length > 0 && _selectedProfileIdx < bpArr.Length)
+        {
+            string selName = bpArr[_selectedProfileIdx];
+            ImGui.Text($"Editing: {selName}");
+            ImGui.TextDisabled("Keywords (comma-separated): cold, phys, critical, attackspeed, gemlevel ...");
+            ImGui.SetNextItemWidth(-70);
+            ImGui.InputText("##kw", ref _editingKeywords, 512);
+            ImGui.SameLine();
+            if (ImGui.Button("Save##kw"))
+            {
+                var prof = _profileManager.GetBuildProfile(selName);
+                prof.ComboMods = _editingKeywords
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(k => k.Trim().ToLowerInvariant())
+                    .Where(k => k.Length > 0)
+                    .ToList();
+                _profileManager.SetBuildProfile(selName, prof);
+            }
+        }
 
         ImGui.Separator();
         ImGui.Text("Filter Rules  (first match wins)");

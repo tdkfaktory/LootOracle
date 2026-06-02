@@ -21,7 +21,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
     private string _editingKeywords = "";
 
     // Bump when DefaultRules() changes — forces overwrite of stale saved rules on load.
-    private const int CurrentRulesVersion = 36;
+    private const int CurrentRulesVersion = 37;
 
     public override bool Initialise()
     {
@@ -67,31 +67,31 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         {
             new()
             {
-                Name = "GOD Tier",
+                Name = "God",
                 Enabled = true,
                 Color = new SerializableColor { R = 255, G = 20, B = 147, A = 255 } // DeepPink
             },
             new()
             {
-                Name = "BiS",
+                Name = "Good",
                 Enabled = true,
                 Color = new SerializableColor { R = 50, G = 205, B = 50, A = 255 } // LimeGreen
             },
             new()
             {
-                Name = "Trade",
+                Name = "Average",
                 Enabled = true,
                 Color = new SerializableColor { R = 255, G = 215, B = 0, A = 255 } // Gold
             },
             new()
             {
-                Name = "Craft Ciano",
+                Name = "Craft",
                 Enabled = true,
                 Color = new SerializableColor { R = 0, G = 255, B = 255, A = 255 } // Cyan
             },
             new()
             {
-                Name = "Craft Base",
+                Name = "Craft Good",
                 Enabled = true,
                 Color = new SerializableColor { R = 30, G = 144, B = 255, A = 255 } // DodgerBlue
             },
@@ -755,27 +755,27 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         string classification = "None";
         Color? retColor = null;
 
-        var ruleGod = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("GOD Tier", StringComparison.OrdinalIgnoreCase));
-        var ruleBis = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("BiS", StringComparison.OrdinalIgnoreCase));
-        var ruleTrade = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Trade", StringComparison.OrdinalIgnoreCase));
-        var ruleCraftCiano = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft Ciano", StringComparison.OrdinalIgnoreCase));
-        var ruleCraftBase = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft Base", StringComparison.OrdinalIgnoreCase));
+        var ruleGod = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("God", StringComparison.OrdinalIgnoreCase));
+        var ruleBis = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Good", StringComparison.OrdinalIgnoreCase));
+        var ruleTrade = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Average", StringComparison.OrdinalIgnoreCase));
+        var ruleCraftCiano = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft", StringComparison.OrdinalIgnoreCase));
+        var ruleCraftBase = Settings.Rules.FirstOrDefault(r => r.Enabled && r.Name.Equals("Craft Good", StringComparison.OrdinalIgnoreCase));
 
         if (isRare)
         {
             if (ruleGod != null && totalScore >= 75)
             {
-                classification = "GOD Tier";
+                classification = "God";
                 retColor = ruleGod.Color.ToColor();
             }
             else if (ruleBis != null && totalScore >= 50)
             {
-                classification = "BiS";
+                classification = "Good";
                 retColor = ruleBis.Color.ToColor();
             }
             else if (ruleTrade != null && totalScore >= 30)
             {
-                classification = "Trade";
+                classification = "Average";
                 retColor = ruleTrade.Color.ToColor();
             }
         }
@@ -783,12 +783,12 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         {
             if (ruleCraftCiano != null && goodTiersCount >= 2)
             {
-                classification = "Craft Ciano";
+                classification = "Craft";
                 retColor = ruleCraftCiano.Color.ToColor();
             }
             else if (ruleCraftBase != null && goodTiersCount >= 1)
             {
-                classification = "Craft Base";
+                classification = "Craft Good";
                 retColor = ruleCraftBase.Color.ToColor();
             }
         }

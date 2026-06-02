@@ -264,7 +264,7 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
             cls.Contains("tiara") || cls.Contains("circlet") || cls.Contains("crest") || cls.Contains("crown"))
         {
             return hasLife || hasSpirit || hasMana || hasResist ||
-                   hasEnergy || hasArmour ||
+                   hasEnergy || hasArmour || hasAttr || hasCrit ||
                    ContainsAny(raw, "evasion") || ContainsAny(name, "evasion");
         }
 

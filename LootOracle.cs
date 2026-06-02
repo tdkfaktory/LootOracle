@@ -328,7 +328,9 @@ public class LootOracle : BaseSettingsPlugin<LootOracleSettings>
         isGood = false;
 
         // Hard exclude: on-kill, on-death, life/mana gained on hit
-        if (ContainsAny(r, "kill", "death", "gained", "onhit") || ContainsAny(n, "kill", "death", "gained", "onhit"))
+        // Use word-boundary patterns to avoid matching "skill" or "skillgem"
+        if (ContainsAny(r, "onkill", "perkill", "on_kill", "ondeath", "gained", "onhit") ||
+            ContainsAny(n, "onkill", "perkill", "on_kill", "ondeath", "gained", "onhit"))
             return 0;
 
         // Special pool mods have no trailing digit — treat as T1 (digit=9) for scoring
